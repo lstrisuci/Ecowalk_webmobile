@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Status bar asli disembunyikan, diganti gambar barphone.png
+  // supaya tampilannya sama persis dengan Figma.
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.bottom],
@@ -27,7 +29,7 @@ class EcoWalkApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(seedColor: hijau),
         ),
-        // Bar status untuk tampil di SEMUA halaman
+        // Bar status (9:41, sinyal, wifi, baterai) tampil di SEMUA halaman
         builder: (context, child) => Stack(
           fit: StackFit.expand,
           children: [
@@ -53,12 +55,55 @@ class EcoWalkApp extends StatelessWidget {
 // KOMPONEN YANG DIPAKAI BERSAMA (Login & Daftar)
 // =====================================================
 
+// 0812... -> +62812...
+String formatHp(String hp) {
+  final d = hp.replaceAll(RegExp(r'\D'), '');
+  if (d.startsWith('0')) return '+62${d.substring(1)}';
+  if (d.startsWith('62')) return '+$d';
+  return '+62$d';
+}
+
+// Akun yang DITETAPKAN di kode: cukup nama pengguna & kata sandi.
+// Setiap aplikasi di-run ulang kamu bisa langsung Masuk. Ubah sesuai maumu.
+// Kalau kamu Buat Akun baru, data ini diganti selama aplikasi masih jalan
+// (setelah di-restart, kembali ke data tetap di bawah).
+class Akun {
+  static String? username = 'Suci Lestari';
+  static String? sandi = '123456';
+  static String? email; // opsional, terisi kalau daftar lewat Buat Akun
+  static String? hp; // opsional, terisi kalau daftar lewat Buat Akun
+
+  static bool get ada => username != null;
+
+  static void simpan(
+      {required String username,
+      required String email,
+      required String hp,
+      required String sandi}) {
+    Akun.username = username;
+    Akun.email = email;
+    Akun.hp = hp;
+    Akun.sandi = sandi;
+  }
+
+  // Login: nama pengguna (huruf besar/kecil tidak dibedakan) + kata sandi
+  static bool cocok(String masukan, String kataSandi) =>
+      ada &&
+      masukan.toLowerCase() == username!.toLowerCase() &&
+      kataSandi == sandi;
+}
+
 void snack(BuildContext context, String pesan, {Color? warna}) =>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(pesan), backgroundColor: warna),
     );
 
-
+// Logo hijau. PNG putihnya diwarnai hijau lewat color matrix.
+// Piksel yang hampir transparan (penyebab garis tipis di atas & bawah
+// logo) dibuang, jadi logo tidak perlu dipotong lagi.
+// Rumus alpha: A_baru = 4 * A_lama - 380  (nilai 0-255)
+// Kalau garis masih tampak -> naikkan 380 (mis. 450).
+// Kalau tepi huruf jadi terlalu kasar -> turunkan 380 (mis. 300).
 Widget logoHijau() => Center(
       child: SizedBox(
         width: 238,
@@ -106,7 +151,7 @@ Widget tombolHijau(String teks, VoidCallback onPressed) => SizedBox(
       ),
     );
 
-// Teks biasa dan teks link biru, dipakai di bagian bawah halaman
+// Teks biasa + teks link biru, dipakai di bagian bawah halaman
 Widget barisLink(String teks, String link, VoidCallback onTap) => Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -129,6 +174,7 @@ Widget barisLink(String teks, String link, VoidCallback onTap) => Row(
     );
 
 // Kerangka halaman: isi diberi jarak atas & bawah yang proporsional
+// (flex) supaya posisinya turun mengikuti tinggi layar, mirip Figma.
 Widget kerangkaHalaman({
   required List<Widget> children,
   int flexAtas = 3,
@@ -161,7 +207,10 @@ Widget kerangkaHalaman({
       ),
     );
 
-
+// Header miring hijau muda + logo (+ judul opsional di bawah logo).
+// Tinggi header = 66% lebar layar (sama seperti proporsi di Figma), jadi
+// posisi logo & judul ikut turun di layar yang lebih besar.
+// Hanya LATAR yang dipotong miring; logo ada di atasnya sehingga utuh.
 Widget headerMiring({String? judul, String? judulGambar}) => LayoutBuilder(
       builder: (context, c) {
         final h = c.maxWidth * 0.66;
@@ -218,8 +267,8 @@ Widget headerMiring({String? judul, String? judulGambar}) => LayoutBuilder(
       },
     );
 
-// true  = judul "LUPA KATA SANDI" 
-// false = judul memakai teks biasa 
+// true  = judul "LUPA KATA SANDI" memakai gambar lib/images/lupasandi.png
+// false = judul memakai teks biasa (header miring & logo tetap digambar kode)
 const bool pakaiGambarLupaSandi = true;
 
 Widget headerLupaSandi() => headerMiring(
@@ -227,11 +276,11 @@ Widget headerLupaSandi() => headerMiring(
       judulGambar: pakaiGambarLupaSandi ? 'lib/images/lupasandi.png' : null,
     );
 
-// Tinggi area bar status ~ 18,8% lebar layar 
+// Tinggi area bar status (barphone.png) ~ 18,8% lebar layar (proporsi Figma)
 double tinggiBarPhone(BuildContext context) =>
     MediaQuery.of(context).size.width * 0.188;
 
-// Kolom input 
+// Kolom input (label & hint opsional, ikon mata opsional)
 class AuthField extends StatelessWidget {
   final TextEditingController controller;
   final IconData? icon;
@@ -239,7 +288,7 @@ class AuthField extends StatelessWidget {
   final String? label;
   final String? hint;
   final bool obscure;
-  final VoidCallback? onToggle; // jika diisi akan muncul ikon mata
+  final VoidCallback? onToggle; // kalau diisi -> muncul ikon mata
   final TextInputType? keyboardType;
   final TextInputAction action;
   final ValueChanged<String>? onSubmitted;
@@ -345,7 +394,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 8), () {
+    Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -415,12 +464,24 @@ class _LoginPageState extends State<LoginPage> {
       snack(context, 'Nama pengguna dan kata sandi harus diisi.');
       return;
     }
-    snack(context, 'Login berhasil. Selamat datang, $username!',
+    if (!Akun.cocok(username, password)) {
+      snack(
+        context,
+        Akun.ada
+            ? 'Nama pengguna atau kata sandi salah.'
+            : 'Belum ada akun. Silakan daftar dulu.',
+      );
+      return;
+    }
+    snack(context, 'Login berhasil. Selamat datang, ${Akun.username}!',
         warna: EcoWalkApp.hijau);
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfilPage(nama: username.toUpperCase()),
+        builder: (_) => ProfilPage(
+          nama: Akun.username!.toUpperCase(),
+          email: Akun.email ?? 'suci06@gmail.com',
+        ),
       ),
     );
   }
@@ -597,6 +658,7 @@ class _RegisterPageState extends State<RegisterPage> {
       snack(context, error);
       return;
     }
+    Akun.simpan(username: username, email: email, hp: hp, sandi: sandi);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -730,12 +792,14 @@ class VerifikasiPage extends StatefulWidget {
   final String email;
   final String hp;
   final bool lupaSandi; // true = alur Lupa Kata Sandi
+  final bool? mulaiHp; // metode awal: true = No. Hp, false = Email
 
   const VerifikasiPage({
     super.key,
     required this.email,
     required this.hp,
     this.lupaSandi = false,
+    this.mulaiHp,
   });
 
   @override
@@ -746,7 +810,9 @@ class _VerifikasiPageState extends State<VerifikasiPage> {
   final kontrol = List.generate(4, (_) => TextEditingController());
   final fokus = List.generate(4, (_) => FocusNode());
   // true = kode dikirim ke No. Hp, false = ke Email
-  late bool lewatHp = widget.hp.isNotEmpty;
+  late bool lewatHp = widget.mulaiHp ?? widget.hp.isNotEmpty;
+  late String hp = widget.hp;
+  late String email = widget.email;
 
   @override
   void dispose() {
@@ -759,16 +825,12 @@ class _VerifikasiPageState extends State<VerifikasiPage> {
     super.dispose();
   }
 
-  // 0812... -> +62812...
-  String get nomorHp {
-    final d = widget.hp.replaceAll(RegExp(r'\D'), '');
-    if (d.startsWith('0')) return '+62${d.substring(1)}';
-    if (d.startsWith('62')) return '+$d';
-    return '+62$d';
-  }
+  // Kalau datanya belum ada, tampilkan contoh seperti di Figma
+  String get tujuan => lewatHp
+      ? (hp.isEmpty ? '+6212371923719238' : formatHp(hp))
+      : (email.isEmpty ? 'contohsample@gmail.com' : email);
 
-  String get tujuan => lewatHp ? nomorHp : widget.email;
-
+  // Ganti metode: cukup pindah tampilan (tanpa dialog), sama seperti Figma
   void gantiMetode() {
     setState(() => lewatHp = !lewatHp);
     for (final c in kontrol) {
@@ -928,9 +990,8 @@ class _VerifikasiPageState extends State<VerifikasiPage> {
                     ),
                     const SizedBox(height: 33),
 
-                    // Link ganti metode hanya muncul kalau No. Hp & Email sama-sama ada
-                    if (widget.hp.isNotEmpty && widget.email.isNotEmpty)
-                      GestureDetector(
+                    // Link ganti metode (selalu tampil, sama seperti Figma)
+                    GestureDetector(
                       onTap: gantiMetode,
                       child: Text(
                         lewatHp
@@ -1023,6 +1084,7 @@ class _LupaSandiPageState extends State<LupaSandiPage> {
           email: lewatEmail ? v : '',
           hp: lewatEmail ? '' : v,
           lupaSandi: true,
+          mulaiHp: !lewatEmail,
         ),
       ),
     );
@@ -1142,9 +1204,10 @@ class _SandiBaruPageState extends State<SandiBaruPage> {
       return;
     }
 
+    Akun.sandi = sandi;
     snack(context, 'Kata sandi berhasil diubah. Silakan masuk.',
         warna: EcoWalkApp.hijau);
-    // Kembali ke halaman login 
+    // Kembali ke halaman login (halaman pertama di tumpukan)
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
@@ -1246,7 +1309,7 @@ class ProfilPage extends StatefulWidget {
   const ProfilPage({
     super.key,
     this.nama = 'Suci Lestari',
-    this.email = 'lestarisuci0506@gmail.com',
+    this.email = 'suci06@gmail.com',
   });
 
   @override
@@ -1318,7 +1381,7 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
       );
 
-  // Bar bawah hijau dan tombol AKUN bulat 
+  // Bar bawah hijau + tombol AKUN bulat yang menonjol ke atas
   Widget navBawah() => SizedBox(
         height: 62,
         child: Stack(
@@ -1500,6 +1563,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
       snack(context, 'Nama pengguna tidak boleh kosong.');
       return;
     }
+    Akun.username = nama;
     snack(context, 'Profil berhasil diperbarui.', warna: EcoWalkApp.hijau);
     Navigator.pop(context, nama); // nama baru dikirim balik ke halaman Profil
   }
