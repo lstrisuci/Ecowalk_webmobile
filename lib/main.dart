@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Status bar asli disembunyikan, diganti gambar barphone.png
+  // supaya tampilannya sama persis dengan Figma.
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.bottom],
@@ -27,8 +29,7 @@ class EcoWalkApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(seedColor: hijau),
         ),
-        
-        
+        // Bar status (9:41, sinyal, wifi, baterai) tampil di SEMUA halaman
         builder: (context, child) => Stack(
           fit: StackFit.expand,
           children: [
@@ -59,6 +60,12 @@ void snack(BuildContext context, String pesan, {Color? warna}) =>
       SnackBar(content: Text(pesan), backgroundColor: warna),
     );
 
+// Logo hijau. PNG putihnya diwarnai hijau lewat color matrix.
+// Piksel yang hampir transparan (penyebab garis tipis di atas & bawah
+// logo) dibuang, jadi logo tidak perlu dipotong lagi.
+// Rumus alpha: A_baru = 4 * A_lama - 380  (nilai 0-255)
+// Kalau garis masih tampak -> naikkan 380 (mis. 450).
+// Kalau tepi huruf jadi terlalu kasar -> turunkan 380 (mis. 300).
 Widget logoHijau() => Center(
       child: SizedBox(
         width: 238,
@@ -129,6 +136,7 @@ Widget barisLink(String teks, String link, VoidCallback onTap) => Row(
     );
 
 // Kerangka halaman: isi diberi jarak atas & bawah yang proporsional
+// (flex) supaya posisinya turun mengikuti tinggi layar, mirip Figma.
 Widget kerangkaHalaman({
   required List<Widget> children,
   int flexAtas = 3,
@@ -165,9 +173,18 @@ Widget kerangkaHalaman({
 // Tinggi header = 66% lebar layar (sama seperti proporsi di Figma), jadi
 // posisi logo & judul ikut turun di layar yang lebih besar.
 // Hanya LATAR yang dipotong miring; logo ada di atasnya sehingga utuh.
-Widget headerMiring({String? judul}) => LayoutBuilder(
+Widget headerMiring({String? judul, String? judulGambar}) => LayoutBuilder(
       builder: (context, c) {
         final h = c.maxWidth * 0.66;
+        final teksJudul = Text(
+          judul ?? '',
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: EcoWalkApp.hijau,
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+          ),
+        );
         return SizedBox(
           height: h,
           width: double.infinity,
@@ -192,15 +209,19 @@ Widget headerMiring({String? judul}) => LayoutBuilder(
                   top: h * 0.82 - 12,
                   left: 0,
                   right: 0,
-                  child: Text(
-                    judul,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: EcoWalkApp.hijau,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                  child: judulGambar == null
+                      ? teksJudul
+                      : Center(
+                          child: SizedBox(
+                            width: 208,
+                            height: 24,
+                            child: Image.asset(
+                              judulGambar,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, _, _) => teksJudul,
+                            ),
+                          ),
+                        ),
                 ),
             ],
           ),
@@ -208,30 +229,28 @@ Widget headerMiring({String? judul}) => LayoutBuilder(
       },
     );
 
-
+// true  = judul "LUPA KATA SANDI" memakai gambar lib/images/lupasandi.png
+// false = judul memakai teks biasa (header miring & logo tetap digambar kode)
 const bool pakaiGambarLupaSandi = true;
 
-Widget headerLupaSandi() => pakaiGambarLupaSandi
-    ? Image.asset(
-        'lib/images/lupasandi.png',
-        width: double.infinity,
-        fit: BoxFit.fitWidth,
-      )
-    : headerMiring(judul: 'LUPA KATA SANDI');
+Widget headerLupaSandi() => headerMiring(
+      judul: 'LUPA KATA SANDI',
+      judulGambar: pakaiGambarLupaSandi ? 'lib/images/lupasandi.png' : null,
+    );
 
-
+// Tinggi area bar status (barphone.png) ~ 18,8% lebar layar (proporsi Figma)
 double tinggiBarPhone(BuildContext context) =>
     MediaQuery.of(context).size.width * 0.188;
 
-// Kolom input 
+// Kolom input (label & hint opsional, ikon mata opsional)
 class AuthField extends StatelessWidget {
   final TextEditingController controller;
   final IconData? icon;
-  final bool garis; 
+  final bool garis; // true = gaya garis bawah
   final String? label;
   final String? hint;
   final bool obscure;
-  final VoidCallback? onToggle; 
+  final VoidCallback? onToggle; // kalau diisi -> muncul ikon mata
   final TextInputType? keyboardType;
   final TextInputAction action;
   final ValueChanged<String>? onSubmitted;
@@ -337,7 +356,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 8), () {
+    Timer(const Duration(seconds: 4), () {
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -1136,7 +1155,7 @@ class _SandiBaruPageState extends State<SandiBaruPage> {
 
     snack(context, 'Kata sandi berhasil diubah. Silakan masuk.',
         warna: EcoWalkApp.hijau);
-    // Kembali ke halaman login 
+    // Kembali ke halaman login (halaman pertama di tumpukan)
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
@@ -1203,7 +1222,8 @@ class _SandiBaruPageState extends State<SandiBaruPage> {
 }
 
 // =====================================================
-// FOTO PROFIL
+// FOTO PROFIL (bulat). Taruh fotonya di lib/images/fotoprofil.png
+// Kalau file belum ada, tampil ikon orang abu-abu.
 // =====================================================
 
 class FotoProfil extends StatelessWidget {
@@ -1237,7 +1257,7 @@ class ProfilPage extends StatefulWidget {
 
   const ProfilPage({
     super.key,
-    this.nama = 'KAYI NYAP NYAP',
+    this.nama = 'Suci Lestari',
     this.email = 'lestarisuci0506@gmail.com',
   });
 
@@ -1310,7 +1330,7 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
       );
 
-  // Bar bawah hijau dan tombol AKUN bulat yang menonjol ke atas
+  // Bar bawah hijau + tombol AKUN bulat yang menonjol ke atas
   Widget navBawah() => SizedBox(
         height: 62,
         child: Stack(
@@ -1387,7 +1407,7 @@ class _ProfilPageState extends State<ProfilPage> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // Header hijau + foto profil 
+              // Header hijau + foto profil (setengah menonjol ke bawah)
               SizedBox(
                 height: 232,
                 width: double.infinity,
@@ -1503,7 +1523,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Column(
             children: [
-              // ruang untuk bar status 
+              // ruang untuk bar status (barphone.png)
               SizedBox(height: tinggiBarPhone(context)),
 
               // App bar hijau
