@@ -4,8 +4,6 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Status bar asli disembunyikan, diganti gambar barphone.png
-  // supaya tampilannya sama persis dengan Figma.
   SystemChrome.setEnabledSystemUIMode(
     SystemUiMode.manual,
     overlays: [SystemUiOverlay.bottom],
@@ -29,7 +27,7 @@ class EcoWalkApp extends StatelessWidget {
           scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(seedColor: hijau),
         ),
-        // Bar status (9:41, sinyal, wifi, baterai) tampil di SEMUA halaman
+        // Bar status tampil di semua halaman
         builder: (context, child) => Stack(
           fit: StackFit.expand,
           children: [
@@ -63,15 +61,13 @@ String formatHp(String hp) {
   return '+62$d';
 }
 
-// Akun yang DITETAPKAN di kode: cukup nama pengguna & kata sandi.
-// Setiap aplikasi di-run ulang kamu bisa langsung Masuk. Ubah sesuai maumu.
-// Kalau kamu Buat Akun baru, data ini diganti selama aplikasi masih jalan
-// (setelah di-restart, kembali ke data tetap di bawah).
+// Penetapan nama pengguna & kata sandi.
+
 class Akun {
   static String? username = 'Suci Lestari';
   static String? sandi = '123456';
-  static String? email; // opsional, terisi kalau daftar lewat Buat Akun
-  static String? hp; // opsional, terisi kalau daftar lewat Buat Akun
+  static String? email; // opsional, terisi jika daftar menggunakan Buat Akun
+  static String? hp; // opsional, terisi jika daftar menggunakan Buat Akun
 
   static bool get ada => username != null;
 
@@ -86,7 +82,7 @@ class Akun {
     Akun.sandi = sandi;
   }
 
-  // Login: nama pengguna (huruf besar/kecil tidak dibedakan) + kata sandi
+  // Login: nama pengguna dan kata sandi
   static bool cocok(String masukan, String kataSandi) =>
       ada &&
       masukan.toLowerCase() == username!.toLowerCase() &&
@@ -98,12 +94,7 @@ void snack(BuildContext context, String pesan, {Color? warna}) =>
       SnackBar(content: Text(pesan), backgroundColor: warna),
     );
 
-// Logo hijau. PNG putihnya diwarnai hijau lewat color matrix.
-// Piksel yang hampir transparan (penyebab garis tipis di atas & bawah
-// logo) dibuang, jadi logo tidak perlu dipotong lagi.
-// Rumus alpha: A_baru = 4 * A_lama - 380  (nilai 0-255)
-// Kalau garis masih tampak -> naikkan 380 (mis. 450).
-// Kalau tepi huruf jadi terlalu kasar -> turunkan 380 (mis. 300).
+
 Widget logoHijau() => Center(
       child: SizedBox(
         width: 238,
@@ -173,8 +164,7 @@ Widget barisLink(String teks, String link, VoidCallback onTap) => Row(
       ],
     );
 
-// Kerangka halaman: isi diberi jarak atas & bawah yang proporsional
-// (flex) supaya posisinya turun mengikuti tinggi layar, mirip Figma.
+
 Widget kerangkaHalaman({
   required List<Widget> children,
   int flexAtas = 3,
@@ -207,10 +197,7 @@ Widget kerangkaHalaman({
       ),
     );
 
-// Header miring hijau muda + logo (+ judul opsional di bawah logo).
-// Tinggi header = 66% lebar layar (sama seperti proporsi di Figma), jadi
-// posisi logo & judul ikut turun di layar yang lebih besar.
-// Hanya LATAR yang dipotong miring; logo ada di atasnya sehingga utuh.
+
 Widget headerMiring({String? judul, String? judulGambar}) => LayoutBuilder(
       builder: (context, c) {
         final h = c.maxWidth * 0.66;
@@ -267,8 +254,8 @@ Widget headerMiring({String? judul, String? judulGambar}) => LayoutBuilder(
       },
     );
 
-// true  = judul "LUPA KATA SANDI" memakai gambar lib/images/lupasandi.png
-// false = judul memakai teks biasa (header miring & logo tetap digambar kode)
+// true  = judul "LUPA KATA SANDI" menggunakan foto
+// false = judul memakai teks biasa 
 const bool pakaiGambarLupaSandi = true;
 
 Widget headerLupaSandi() => headerMiring(
@@ -276,11 +263,11 @@ Widget headerLupaSandi() => headerMiring(
       judulGambar: pakaiGambarLupaSandi ? 'lib/images/lupasandi.png' : null,
     );
 
-// Tinggi area bar status (barphone.png) ~ 18,8% lebar layar (proporsi Figma)
+// Tinggi area bar status ~ 18,8% lebar layar 
 double tinggiBarPhone(BuildContext context) =>
     MediaQuery.of(context).size.width * 0.188;
 
-// Kolom input (label & hint opsional, ikon mata opsional)
+// Kolom input 
 class AuthField extends StatelessWidget {
   final TextEditingController controller;
   final IconData? icon;
@@ -288,7 +275,7 @@ class AuthField extends StatelessWidget {
   final String? label;
   final String? hint;
   final bool obscure;
-  final VoidCallback? onToggle; // kalau diisi -> muncul ikon mata
+  final VoidCallback? onToggle; // jika diisi akan muncul ikon mata
   final TextInputType? keyboardType;
   final TextInputAction action;
   final ValueChanged<String>? onSubmitted;
@@ -775,7 +762,7 @@ class _RegisterPageState extends State<RegisterPage> {
 // VERIFIKASI PAGE
 // =====================================================
 
-// Potongan header miring (sisi kiri lebih tinggi dari sisi kanan)
+// Potongan header miring 
 class _DiagonalClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size s) => Path()
@@ -825,12 +812,12 @@ class _VerifikasiPageState extends State<VerifikasiPage> {
     super.dispose();
   }
 
-  // Kalau datanya belum ada, tampilkan contoh seperti di Figma
+  // Jika datanya belum ada, tampilkan contoh seperti di Figma
   String get tujuan => lewatHp
       ? (hp.isEmpty ? '+6212371923719238' : formatHp(hp))
       : (email.isEmpty ? 'contohsample@gmail.com' : email);
 
-  // Ganti metode: cukup pindah tampilan (tanpa dialog), sama seperti Figma
+  // Ganti metode: cukup pindah tampilan 
   void gantiMetode() {
     setState(() => lewatHp = !lewatHp);
     for (final c in kontrol) {
@@ -990,7 +977,7 @@ class _VerifikasiPageState extends State<VerifikasiPage> {
                     ),
                     const SizedBox(height: 33),
 
-                    // Link ganti metode (selalu tampil, sama seperti Figma)
+                    // Link ganti metode 
                     GestureDetector(
                       onTap: gantiMetode,
                       child: Text(
@@ -1207,7 +1194,7 @@ class _SandiBaruPageState extends State<SandiBaruPage> {
     Akun.sandi = sandi;
     snack(context, 'Kata sandi berhasil diubah. Silakan masuk.',
         warna: EcoWalkApp.hijau);
-    // Kembali ke halaman login (halaman pertama di tumpukan)
+    // Kembali ke halaman login 
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
@@ -1458,7 +1445,7 @@ class _ProfilPageState extends State<ProfilPage> {
         body: SingleChildScrollView(
           child: Column(
             children: [
-              // Header hijau + foto profil (setengah menonjol ke bawah)
+              // Header hijau + foto profil 
               SizedBox(
                 height: 232,
                 width: double.infinity,
@@ -1575,7 +1562,7 @@ class _EditProfilPageState extends State<EditProfilPage> {
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           child: Column(
             children: [
-              // ruang untuk bar status (barphone.png)
+              // ruang untuk bar status 
               SizedBox(height: tinggiBarPhone(context)),
 
               // App bar hijau
