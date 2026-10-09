@@ -64,8 +64,8 @@ String formatHp(String hp) {
 // Penetapan nama pengguna & kata sandi.
 
 class Akun {
-  static String? username = 'Suci Lestari';
-  static String? sandi = '123456';
+  static String? username = 'user';
+  static String? sandi = '1234567';
   static String? email; // opsional, terisi jika daftar menggunakan Buat Akun
   static String? hp; // opsional, terisi jika daftar menggunakan Buat Akun
 
